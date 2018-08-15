@@ -5,6 +5,7 @@ service: notes-app-api
 plugins:
   - serverless-webpack
   - serverless-offline
+  - serverless-domain-manager
 
 # serverless-webpack configuration
 # Enable auto-packing of external modules
@@ -12,26 +13,38 @@ custom:
   webpack:
     webpackConfig: ./webpack.config.js
     includeModules: true
-
+  customDomain:
+    domainName: notes.gwjeong.com
+    stage: ${self:provider.stage}
+    certificateName: "*.gwjeong.com"
+    createRoute53Record: true
+    basePath: ''
 provider:
   name: aws
   runtime: nodejs8.10
   stage: prod
   region: ap-northeast-1
   profile: serverless
-
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - dynamodb: DescribeTable
-        - dynamodb: Query
-        - dynamodb: Scan
-        - dynamodb: GetItem
-        - dynamodb: PutItem
-        - dynamodb: UpdateItem
-        - dynamodb: DeleteItem
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:ap-northeast-1:*:*"
 functions:
+  list:
+    handler: list.main
+    events:
+      - http:
+          path: notes
+          method: get
+          cors: true
+          authorizer: aws_iam
   create:
     handler: create.main
     events:
@@ -48,27 +61,19 @@ functions:
           method: get
           cors: true
           authorizer: aws_iam
-  list:
-    handler: list.main
-    events:
-      - http:
-        path: notes
-        method: get
-        cors: true
-        authorizer: aws_iam
   update:
     handler: update.main
     events:
       - http:
-        path: note/{id}
-        method: put
-        cors: true
-        authorizer: aws_iam
+          path: notes/{id}
+          method: put
+          cors: true
+          authorizer: aws_iam
   delete:
     handler: delete.main
     events:
       - http:
-        path: notes/{id}
-        method: delete
-        cors: true
-        authorizer: aws_iam
+          path: notes/{id}
+          method: delete
+          cors: true
+          authorizer: aws_iam
